@@ -37,6 +37,9 @@ class Microcontroller():
         self.serial.close()
 
     def send_temp_setpoint(self, value):
+
+        print('Value sent to uController: {}'.format(value))
+        
         # Send this as a 3 byte integer with 1 more byte as a flag
         cmd = bytearray(self.tx_buffer_length)
         cmd[0] = 0 # Set temp set-point
@@ -84,16 +87,5 @@ class Microcontroller():
             data.append(ord(self.serial.read()))
         return data
 
-    def temp_to_voltage(self, temp):
-        ''' Convert the temp value to a voltage
-        '''
-        voltage = TempControllerDef.SENSOR_CURRENT*TempControllerDef.THERMISTOR_LUT(temp)
-        return voltage
-
-    def analog_to_digital(self, analog):
-        ''' Convert analog voltage between 0 to Vdd of uController to a digital-value based on uController ADC
-        '''
-        digital = int((analog/3.3)*MicrocontrollerDef.DAC_RES) # Int betwee 0 and 2^DAC_RES
-
-        return digital 
+    
 

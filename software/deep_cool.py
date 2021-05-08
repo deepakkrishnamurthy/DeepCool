@@ -9,14 +9,13 @@ from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.QtGui import *
 
-# Qt style sheets
-from aqua.qsshelper import QSSHelper
+
 
 
 # app specific libraries
 #import control.gui as gui
 #import control.gui_2cameras_async as gui
-import control.gui_temperature_control as gui
+import control.gui_deepcool as gui
 
 if __name__ == "__main__":
 
@@ -24,10 +23,6 @@ if __name__ == "__main__":
 	
 	# Main GUI window
 	win = gui.DeepCool_GUI()
-
-	# Style sheet
-	qss = QSSHelper.open_qss(os.path.join('aqua', 'aqua.qss'))
-	win.setStyleSheet(qss)
 
 	win.show()
 
