@@ -5,6 +5,7 @@ import time
 import numpy as np
 
 from control._def import *
+import control.utils.byte_operations as byte_operations
 
 # add user to the dialout group to avoid the need to use sudo
 
@@ -35,61 +36,15 @@ class Microcontroller():
     def close(self):
         self.serial.close()
 
-    def send_temp_setpoint(self):
-        pass
+    def send_temp_setpoint(self, value):
+        # Send this as a 3 byte integer with 1 more byte as a flag
+        cmd = bytearray(self.tx_buffer_length)
+        cmd[0] = 0 # Set temp set-point
+        cmd[1], cmd[2] = byte_operations.split_int_2byte(value)
+        self.serial.write(cmd)
 
     def toggle_temp_control(self):
         pass
-
-
-    def toggle_LED(self,state):
-        cmd = bytearray(self.tx_buffer_length)
-        cmd[0] = 3
-        cmd[1] = state
-        self.serial.write(cmd)
-    
-    def toggle_laser(self,state):
-        cmd = bytearray(self.tx_buffer_length)
-        cmd[0] = 4
-        cmd[1] = state
-        self.serial.write(cmd)
-
-    
-
-    def move_theta_nonblocking(self,delta):
-        direction = int((np.sign(delta)+1)/2)
-        n_microsteps = abs(delta*Motion.MAX_MICROSTEPS)
-        if n_microsteps > 65535:
-            n_microsteps = 65535
-        cmd = bytearray(self.tx_buffer_length)
-        cmd[0] = 3
-        cmd[1] = 1-direction
-        cmd[2] = int(n_microsteps) >> 8
-        cmd[3] = int(n_microsteps) & 0xff
-        self.serial.write(cmd)
-        # print('Theta non-blocking command sent to uController: {}'.format(n_microsteps))
-
-
-    # Convert below functions to be compatible with squid/octopi serial interface.
-    def send_tracking_command(self, tracking_flag):
-        cmd = bytearray(self.tx_buffer_length)
-        cmd[0] = 4
-        cmd[1] = tracking_flag
-
-        self.serial.write(cmd)
-
-
-    def send_liquid_lens_amp(self, amp):
-        cmd = bytearray(self.tx_buffer_length)
-        cmd[0] = 8
-        cmd[1] = 1
-        cmd[2], cmd[3] = split_int_2byte(round(amp*100)) 
-
-        self.serial.write(cmd)
-
-    def send_command(self,command):
-        cmd = bytearray(self.tx_buffer_length)
-        self.serial.write(cmd)
 
     def read_received_packet(self):
         # wait to receive data
@@ -128,3 +83,17 @@ class Microcontroller():
         for i in range(self.rx_buffer_length):
             data.append(ord(self.serial.read()))
         return data
+
+    def temp_to_voltage(self, temp):
+        ''' Convert the temp value to a voltage
+        '''
+        voltage = TempControllerDef.SENSOR_CURRENT*TempControllerDef.THERMISTOR_LUT(temp)
+        return voltage
+
+    def analog_to_digital(self, analog):
+        ''' Convert analog voltage between 0 to Vdd of uController to a digital-value based on uController ADC
+        '''
+        digital = int((analog/3.3)*MicrocontrollerDef.DAC_RES) # Int betwee 0 and 2^DAC_RES
+
+        return digital 
+

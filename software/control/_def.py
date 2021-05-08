@@ -6,10 +6,11 @@ class MicrocontrollerDef:
      # Time interval for reading micro Controller (ms)
     UCONTROLLER_READ_INTERVAL = 25 
     MSG_LENGTH = 12
-    CMD_LENGTH = 4
-    N_BYTES_POS = 3
-    RUN_OPENLOOP = False # Determines whether stepper/encoders are used to calculate stage positions.
-
+    CMD_LENGTH = 3
+	
+	DAC_RES = 12 
+	ADC_RES = 12
+	VDD = 3.3 # uController voltage
     def __init__(self):
         pass
 
@@ -25,6 +26,7 @@ class TempControllerDef:
 	TEMP_MAX = 50
 	TEMP_STEP_MIN = 0.1
 	TEMP_DEFAULT = 20.0
+
 	def __init__(self):
         pass
 

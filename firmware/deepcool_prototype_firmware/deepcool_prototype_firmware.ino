@@ -6,6 +6,8 @@
 
 #include <Wire.h>
 
+# define TESTING
+
 # define N_SENSORS 1
 #define temperature_sensor_1 A0 
 #define set_point_input A1
@@ -20,7 +22,7 @@ int set_voltage_input_digital = 0, set_voltage_input_digital_prev = 0 ;
 float set_voltage_input_analog = 0, set_voltage_input_analog_prev=0.0;
 int sensor_voltage;
 
-unsigned long int last_sensor_read=0, last_send_time=0;
+unsigned long last_sensor_read=0, last_send_time=0;
 
 void setup() 
 {
@@ -38,21 +40,37 @@ void loop() {
 
   // Receive the new set-temperature from the computer if available
   // @@@ ADD REC CODE HERE @@@
-  // For testing use a potentiometer.
-  set_voltage_input_digital = analogRead(set_point_input); // Set point voltage red by the ADC
-  set_voltage_input_analog = (set_voltage_input_digital/float(adc_resolution))*3.3; // Set-point voltage in volts
+  //Data reception: the data is read at the frequency of the computer
+  while (SerialUSB.available()) 
+  { 
+    buffer_rx[buffer_rx_ptr] = SerialUSB.read();
+    buffer_rx_ptr = buffer_rx_ptr + 1;
+    if (buffer_rx_ptr == CMD_LENGTH) 
+    {
+        buffer_rx_ptr = 0;
+ 
+        isReceived=true;
 
-  // Print the recvd voltage
-  SerialUSB.println(set_voltage_input_analog);
+        if(buffer_rx[0]==0)
+        {
+          // New set-point temp received.
+           set_voltage_input_digital = long(buffer_rx[1])*256 + long(buffer_rx[2])
+          
+        }
+
+  #ifdef TESTING
+    // For testing use a potentiometer.
+    set_voltage_input_digital = analogRead(set_point_input); // Set point voltage red by the ADC
+    set_voltage_input_analog = (set_voltage_input_digital/float(adc_resolution))*3.3; // Set-point voltage in volts  
+  # endif
   
   // If the set-point is changed then write the new value to the DAC
-  // Convert the voltage to a digital value
   if(set_voltage_input_digital != set_voltage_input_digital_prev)
-  {
-    set_voltage_digital = int((set_voltage_input_analog/3.3)*4095);
-    SerialUSB.println(set_voltage_digital);
-    analogWrite(DAC1, set_voltage_digital);
+  {    
+    analogWrite(DAC1, set_voltage_input_digital);
     set_voltage_input_digital_prev = set_voltage_input_digital;  
+
+   
   }
 //
   if(millis() - last_sensor_read >= update_time)
@@ -63,24 +81,37 @@ void loop() {
     sensor_voltage = analogRead(temperature_sensor_1);
     // Map the reading to the same resolution as the DAC
     sensor_voltage = map(sensor_voltage, 0, adc_resolution, 0, dac_resolution);
-
-    SerialUSB.println('Sensor voltage');
-    SerialUSB.println(sensor_voltage);
+  
+   
 
   }
+
+  
+
+  
 //
 //  // Send the temperature to the computer
-//  // @@@ ADD REC CODE HERE @@@
-//  if(millis() - last_send_time >= send_data_time)
-//  {
-//    // Send or Display the data
-//    Serial.println('Set value');
-//    Serial.println(set_voltage_digital);
-//    
-//    Serial.println('Sensor value');
-//    Serial.println(sensor_voltage);
-//  }
-  
+//  // @@@ ADD SEND CODE HERE @@@
+  if(millis() - last_send_time >= send_data_time)
+  {
+      
+      // send the actual temperature value
+      buffer_tx[0] = byte(sensor_voltage>>8);
+      buffer_tx[1] = byte(sensor_voltage%256);
+
+      // send the set-temperature value
+      buffer_tx[0] = byte(set_voltage_input_digital>>8);
+      buffer_tx[1] = byte(set_voltage_input_digital%256);
+    
+  }
+
+   # ifdef TESTING
+      SerialUSB.println(set_voltage_input_analog);
+      SerialUSB.println(set_voltage_digital);
+      SerialUSB.println('Sensor voltage');
+      SerialUSB.println(sensor_voltage);
+    #endif
+
     
 
 }
