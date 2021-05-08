@@ -36,10 +36,7 @@ class Microcontroller():
     def close(self):
         self.serial.close()
 
-    def send_temp_setpoint(self, value):
-
-        print('Value sent to uController: {}'.format(value))
-        
+    def send_temp_setpoint(self, value):        
         # Send this as a 3 byte integer with 1 more byte as a flag
         cmd = bytearray(self.tx_buffer_length)
         cmd[0] = 0 # Set temp set-point

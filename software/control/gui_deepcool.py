@@ -58,15 +58,9 @@ class MicrocontrollerReceiver(QObject):
 			sensor_voltage_digital = byte_operations.dataNbyte_to_int(data[0:2], 2)
 			set_voltage_digital = byte_operations.dataNbyte_to_int(data[2:4], 2)
 
-			print('Recvd sensor voltage: {}'.format(sensor_voltage_digital))
-			print('Recvd set voltage: {}'.format(set_voltage_digital))
-
 			# Convert voltage to temperature
 			analog_voltage = digital_to_analog(sensor_voltage_digital)
 			analog_voltage_set = digital_to_analog(set_voltage_digital)
-
-			print('Sensor voltage (analog): {}'.format(analog_voltage))
-			print('Set voltage (analog): {}'.format(analog_voltage_set))
 
 			temperature_measured = voltage_to_temp(analog_voltage)
 			temperature_set = voltage_to_temp(analog_voltage_set)

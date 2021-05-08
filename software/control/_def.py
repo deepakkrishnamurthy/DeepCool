@@ -46,7 +46,6 @@ def voltage_to_temp(voltage):
 	''' Convert the temp value to a voltage
 	'''
 	resistance = voltage/TempControllerDef.SENSOR_CURRENT
-	print('Resistance :{} Ohms'.format(resistance))
 	temp = float(TempControllerDef.THERMISTOR_LUT_RES_TO_TEMP(resistance))
 	return temp
 

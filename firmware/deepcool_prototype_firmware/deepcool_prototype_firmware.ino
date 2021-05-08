@@ -91,7 +91,7 @@ void loop()
 //    sensor_voltage = analogRead(temperature_sensor_1);
 
     // Testing
-    sensor_voltage = 10;
+    sensor_voltage = 500;
     // Map the reading to the same resolution as the DAC
     sensor_voltage = map(sensor_voltage, 0, adc_resolution, 0, dac_resolution);
   }
