@@ -24,14 +24,13 @@ bool calculateCRC_tx = true;
 volatile bool isReceived = false;
 
 const int dac_resolution = 4095; // 12-bit DAC resolution
-const int adc_resolution = 1023; // 1--bit ADC resolution (Arduino)
+const int adc_resolution = 4095; // 10-bit ADC resolution (Arduino)
 
 const int update_time = 1000; // Update time in ms
 const int send_data_time = 1000; // Rate at which data is sent to computer
 int set_voltage_digital = 0; // or in the digital sense: 0-4095
 int set_voltage_input_digital = 1861, set_voltage_input_digital_prev = 0 ;
-float set_voltage_input_analog = 1.5, set_voltage_input_analog_prev=0.0;
-int sensor_voltage;
+int sensor_voltage, set_voltage_actual;
 
 unsigned long last_sensor_read=0, last_send_time=0;
 
@@ -41,6 +40,7 @@ void setup()
   while(!SerialUSB); //Wait until connection is established
   
   analogWriteResolution(12);
+  analogReadResolution(12);
 
 }
 
@@ -63,7 +63,7 @@ void loop()
         {
           // New set-point temp received.
            set_voltage_input_digital = long(buffer_rx[1])*256 + long(buffer_rx[2]);
-          
+
         }
     }
   }
@@ -71,7 +71,6 @@ void loop()
   #ifdef TESTING
     // For testing use a potentiometer.
     set_voltage_input_digital = analogRead(set_point_input); // Set point voltage red by the ADC
-    set_voltage_input_analog = (set_voltage_input_digital/float(adc_resolution))*3.3; // Set-point voltage in volts  
   # endif
   
   // If the set-point is changed then write the new value to the DAC
@@ -88,12 +87,15 @@ void loop()
     last_sensor_read = millis();
 
     // Read the sensor
-//    sensor_voltage = analogRead(temperature_sensor_1);
-
+    #ifdef TESTING
     // Testing
-    sensor_voltage = 500;
-    // Map the reading to the same resolution as the DAC
-    sensor_voltage = map(sensor_voltage, 0, adc_resolution, 0, dac_resolution);
+      sensor_voltage = 310;
+      set_voltage_actual = int(adc_resolution*(0.516 + set_voltage_input_digital*(2.72-0.516)/float(dac_resolution))/3.3); 
+    #else 
+        sensor_voltage = analogRead(temperature_sensor_1);
+        set_voltage_actual = analogRead(set_point_input);
+    #endif
+    
   }
 
 //
@@ -102,20 +104,19 @@ void loop()
   if(millis() - last_send_time >= send_data_time)
   {
       last_send_time = millis();
-      // send the actual temperature value
+      // send the measured temperature value
       buffer_tx[0] = byte(sensor_voltage>>8);
       buffer_tx[1] = byte(sensor_voltage%256);
 
-      // send the set-temperature value
-      buffer_tx[2] = byte(set_voltage_input_digital>>8);
-      buffer_tx[3] = byte(set_voltage_input_digital%256);
+      // send the set-temperature value (actual)
+      buffer_tx[2] = byte(set_voltage_actual>>8);
+      buffer_tx[3] = byte(set_voltage_actual%256);
 
       SerialUSB.write(buffer_tx, MSG_LENGTH);
     
   }
 
    # ifdef TESTING
-      SerialUSB.println(set_voltage_input_analog);
       SerialUSB.println(set_voltage_digital);
       SerialUSB.println('Sensor voltage');
       SerialUSB.println(sensor_voltage);

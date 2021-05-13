@@ -8,9 +8,11 @@ class MicrocontrollerDef:
 	MSG_LENGTH = 4
 	CMD_LENGTH = 3
 	
-	DAC_RES = 12 
-	ADC_RES = 12
+	DAC_RES = 12 # Arduino Due DAC resolution (set to 12 bits)
+	ADC_RES = 12 # Arduino Due ADC resolution (set to 12 bits)
 	VDD = 3.3 # uController voltage
+	DAC_MIN = 0.516 # Min of DAC voltage (Arduino Due) 
+	DAC_MAX = 2.72  # Max of DAC voltage (Arduino Due)
 	def __init__(self):
 		pass
 
@@ -29,7 +31,7 @@ class TempControllerDef:
 	THERMISTOR_LUT_RES_TO_TEMP = interpolate.interp1d(thermistor_data['Resistance (Ohms)'], thermistor_data['Temp (C)']) # Converts Resistance in Ohms to temp in C
 
 	TEMP_MIN = 4
-	TEMP_MAX = 50
+	TEMP_MAX = 40
 	TEMP_STEP_MIN = 0.1
 	TEMP_DEFAULT = 20.0
 
@@ -51,17 +53,23 @@ def voltage_to_temp(voltage):
 
 
 def analog_to_digital(analog):
-	''' Convert analog voltage between 0 to Vdd of uController to a digital-value based on uController ADC
+	''' Convert analog voltage to a digital-value based on uController DAC's voltage limits and resolution
 	'''
-	digital = int((analog/MicrocontrollerDef.VDD)*(2**MicrocontrollerDef.DAC_RES)) # Int betwee 0 and 2^DAC_RES
+	digital = int(((analog - MicrocontrollerDef.DAC_MIN)/(MicrocontrollerDef.DAC_MAX - MicrocontrollerDef.DAC_MIN))*(2**MicrocontrollerDef.DAC_RES)) # Int between 0 and 2^DAC_RES
 
 	return digital 
 
 def digital_to_analog(digital):
-
-	analog = float((digital/(2**MicrocontrollerDef.DAC_RES))*MicrocontrollerDef.VDD) # Int betwee 0 and 2^DAC_RES
+	# Convert digital value measured by uController ADC into Analog voltage
+	analog = float((digital/(2**MicrocontrollerDef.ADC_RES))*MicrocontrollerDef.VDD) # Int betwee 0 and 2^DAC_RES
 
 	return analog
+
+PLOT_VARIABLES = ['Temperature (measured)', 'Temperature (set)']
+
+PLOT_COLORS = {'Temperature (measured)':'r','Temperature (set)':'c'}
+
+PLOT_UNITS = {'Temperature (measured)':'C','Temperature (set)':'C'}
 
 
 
