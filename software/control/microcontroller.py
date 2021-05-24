@@ -43,6 +43,14 @@ class Microcontroller():
         cmd[1], cmd[2] = byte_operations.split_int_2byte(value)
         self.serial.write(cmd)
 
+    def send_fan_speed(self, value):
+        cmd = bytearray(self.tx_buffer_length)
+        cmd[0] = 1 # Set fan-speed
+        cmd[1], cmd[2] = byte_operations.split_int_2byte(value)
+        self.serial.write(cmd)
+        print('Sent fan speed {}'.format(value))
+
+
     def toggle_temp_control(self):
         pass
 

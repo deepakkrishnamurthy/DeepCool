@@ -6,6 +6,7 @@ from datetime import datetime
 os.environ["QT_API"] = "pyqt5"
 import qtpy
 import pyqtgraph as pg
+import numpy as np
 
 # qt libraries
 from qtpy.QtCore import *
@@ -33,6 +34,7 @@ class MicrocontrollerReceiver(QObject):
 	update_temperature = Signal(float)
 	update_plot_1 = Signal(str, float, float)
 	update_plot_2 = Signal(str, float, float)
+	sensor_readings_signal = Signal(np.ndarray)
 
 	def __init__(self, microcontroller):
 		QObject.__init__(self)
@@ -48,20 +50,18 @@ class MicrocontrollerReceiver(QObject):
 		self.timer_read_uController.start()
 
 		self.stop_signal_received = False
+		self.save_data = False
 
 		self.time_now = 0
 		self.time_prev = 0
 
-		SAVE_DATA = ['Time', 'Temperature set (C)', 'Temperature measured (C)']
+		self.sensor_readings = np.zeros(MicrocontrollerDef.N_SENSORS)
+		self.sensor_readings_temp = np.zeros(MicrocontrollerDef.N_SENSORS)
 
-		# Create a new CSV file for data logging
-		self.csv_register = CSV_Tool.CSV_Register(header = [SAVE_DATA])
+		self.SAVE_DATA = ['Time', 'Temperature set (C)', 'Temperature measured (C)'] + ['Sensor {} (C)'.format(ii+1) for ii in range(MicrocontrollerDef.N_SENSORS)]
+		self.csv_register = None
 
-		path, *rest = os.path.split(os.getcwd())
-		self.path = os.path.join(path, 'testing_data', 'data' + datetime.now().strftime('%Y-%m-%d %H-%M-%-S')+'.csv')
-
-		self.csv_register.file_directory= self.path
-		self.csv_register.start_write()
+		
 
 
 	def getData_microcontroller(self):
@@ -76,6 +76,12 @@ class MicrocontrollerReceiver(QObject):
 			sensor_voltage_digital = byte_operations.dataNbyte_to_int(data[0:2], 2)
 			set_voltage_digital = byte_operations.dataNbyte_to_int(data[2:4], 2)
 
+			# Read data from remaining sensors (if connected)
+			for ii in range(MicrocontrollerDef.N_SENSORS):
+				# The sensor readings will be a voltage from the resistive divider so the conversion formula is different
+				self.sensor_readings[ii] = byte_operations.dataNbyte_to_int(data[4 + 2*ii:4 + 2*(ii+1)], 2)
+				print(self.sensor_readings[ii])
+
 			# Convert voltage to temperature
 			analog_voltage = digital_to_analog(sensor_voltage_digital)
 			analog_voltage_set = digital_to_analog(set_voltage_digital)
@@ -86,6 +92,11 @@ class MicrocontrollerReceiver(QObject):
 			print('Temperature measured: {} C'.format(round(temperature_measured, 1)))
 			print('Temperature Set: {} C'.format(round(temperature_set,1)))
 
+			# @@@ Convert the sensor readings (not connected to Temp controller) to a temperature.
+			for ii in range(MicrocontrollerDef.N_SENSORS):
+				self.sensor_readings_temp[ii] = sensor_reading_to_temp(self.sensor_readings[ii])
+
+
 			self.update_temperature.emit(temperature_measured)
 
 			# Update plots
@@ -93,27 +104,52 @@ class MicrocontrollerReceiver(QObject):
 			self.update_plot_1.emit('Temperature (measured)', time_elapsed, temperature_measured)
 			self.update_plot_2.emit('Temperature (set)', time_elapsed, temperature_set)
 
+			if(MicrocontrollerDef.N_SENSORS>0):
+				self.sensor_readings_signal.emit(self.sensor_readings_temp)
 			# Log the data to a CSV file
-			self.csv_register.write_line([[time_elapsed, temperature_set, temperature_measured]])
-			print('wrote data to file')
+			if(self.save_data):
+				self.csv_register.write_line([[time_elapsed, temperature_set, temperature_measured] + [self.sensor_readings_temp[ii] for ii in range(MicrocontrollerDef.N_SENSORS)]])
+				print('wrote data to file')
 
 		else:
 			pass
+
+	def toggle_save_data(self, flag):
+		save_data_prev = self.save_data
+		self.save_data = flag
+
+		if(save_data_prev == False and self.save_data == True):
+
+			# Create a new CSV file for data logging
+			self.csv_register = CSV_Tool.CSV_Register(header = [self.SAVE_DATA])
+
+			path, *rest = os.path.split(os.getcwd())
+			self.path = os.path.join(path, 'testing_data', 'data' + datetime.now().strftime('%Y-%m-%d %H-%M-%-S')+'.csv')
+
+			self.csv_register.file_directory= self.path
+			self.csv_register.start_write()
+
+		elif (save_data_prev == True and self.save_data == False):
+			self.csv_register.close()
+			self.csv_register = None
 
 
 	def stop(self):
 
 		self.stop_signal_received = True
 		self.timer_read_uController.stop()
-		self.csv_register.close()
+		if(self.csv_register):
+			self.csv_register.close()
 
 		print('Stopped uController receiver')
 
 
 
-class TemperatureSettingWidget(QWidget):
+class TemperatureControlWidget(QWidget):
 	
 	temp_setpoint = Signal(float)
+	fan_speed = Signal(int)
+	save_data_signal = Signal(bool)
 
 	def __init__(self, main=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -130,9 +166,27 @@ class TemperatureSettingWidget(QWidget):
 		self.entry_temp_setpoint.setValue(TempControllerDef.TEMP_DEFAULT)
 
 
-		# LCD display for the actual temp
+		# Display for the actual temp (from Temp controller)
 		self.actual_temp_display = pg.ValueLabel(suffix="C")
 		self.actual_temp_display.setValue(TempControllerDef.TEMP_DEFAULT)
+
+		self.temp_display = {}
+		# Display for actual temp from other temperature sensors
+		for ii in range(MicrocontrollerDef.N_SENSORS):
+			self.temp_display[ii] = pg.ValueLabel(suffix="C")
+
+		# Button for toggling data saving
+		self.save_data_button = QPushButton('Save data')
+		self.save_data_button.setCheckable(True)
+		self.save_data_button.setChecked(False)
+
+		# Slide for setting the fan-speed
+		self.slider_speed = QSlider(Qt.Vertical)
+		self.slider_speed.setTickPosition(QSlider.TicksBelow)
+		self.slider_speed.setMinimum(0)
+		self.slider_speed.setMaximum(100)
+		self.slider_speed.setValue(50)
+		self.slider_speed.setSingleStep(1)
 
 		# Layout
 		layout = QGridLayout()
@@ -141,11 +195,21 @@ class TemperatureSettingWidget(QWidget):
 		layout.addWidget(QLabel('Temperature measured (C)'), 0,1,1,1)
 		layout.addWidget(self.actual_temp_display, 1,1,1,1)
 
+		for ii in range(MicrocontrollerDef.N_SENSORS):
+			layout.addWidget(QLabel('Sensor {} (C)'.format(ii+1)), 2+ii,0)
+			layout.addWidget(self.temp_display[ii], 2+ii, 1)
+
+		layout.addWidget(QLabel('Fan speed (%)'),0,2,1,1)
+		layout.addWidget(self.slider_speed,1,2,2+MicrocontrollerDef.N_SENSORS-1,1)
+
+		layout.addWidget(self.save_data_button,0,3)
+
 		self.setLayout(layout)
 
 		# Connections
 		self.entry_temp_setpoint.valueChanged.connect(self.send_temp_setpoint)
-
+		self.save_data_button.clicked.connect(self.handle_save_button)
+		self.slider_speed.valueChanged.connect(self.send_fan_speed)
 
 
 	def send_temp_setpoint(self):
@@ -173,8 +237,28 @@ class TemperatureSettingWidget(QWidget):
 
 		self.temp_setpoint.emit(voltage_digital) # Emit the temp set-point in voltage (digital)
 
+	def send_fan_speed(self):
+		value = self.slider_speed.value()
+
+		digital_value = int((value/100)*(2**MicrocontrollerDef.DAC_RES))
+
+		self.fan_speed.emit(digital_value)
+
 	def update_actual_temp_display(self, value):
 		self.actual_temp_display.setValue(value)
+
+	def update_sensor_temp_display(self, value):
+		# Update sensor readings from other sensors (not connected to Temp controller)
+		for ii in range(MicrocontrollerDef.N_SENSORS):
+
+			self.temp_display[ii].setValue(value[ii])			
+
+	def handle_save_button(self):
+
+		if(self.save_data_button.isChecked()):
+			self.save_data_signal.emit(True)
+		else:
+			self.save_data_signal.emit(False)
 
 
 
@@ -187,7 +271,7 @@ class DeepCool_GUI(QMainWindow):
 		
 		self.setWindowTitle('Deep Cool v0.0.1')
 
-		self.temp_setting_widget = TemperatureSettingWidget()
+		self.temp_setting_widget = TemperatureControlWidget()
 		self.plot_widget = PlotWidget(title = 'Temperature', data_to_plot = PLOT_VARIABLES)
 		self.microcontroller = microcontroller.Microcontroller()
 		self.microcontroller_Receiver = MicrocontrollerReceiver(self.microcontroller)
@@ -204,8 +288,11 @@ class DeepCool_GUI(QMainWindow):
 		# Connections
 		# If temp set-point is changed then send it to the uController.
 		self.temp_setting_widget.temp_setpoint.connect(self.microcontroller.send_temp_setpoint)
+		self.temp_setting_widget.save_data_signal.connect(self.microcontroller_Receiver.toggle_save_data)
+		self.temp_setting_widget.fan_speed.connect(self.microcontroller.send_fan_speed)
 		# Update the temperature display based on measured value
 		self.microcontroller_Receiver.update_temperature.connect(self.temp_setting_widget.update_actual_temp_display)
+		self.microcontroller_Receiver.sensor_readings_signal.connect(self.temp_setting_widget.update_sensor_temp_display)
 		# Plot connections
 		self.microcontroller_Receiver.update_plot_1.connect(self.plot_widget.update_plot)
 		self.microcontroller_Receiver.update_plot_2.connect(self.plot_widget.update_plot)

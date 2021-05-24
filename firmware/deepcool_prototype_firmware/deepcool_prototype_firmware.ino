@@ -6,19 +6,21 @@
 
 #include <Wire.h>
 
-//# define TESTING
+# define TESTING
 
-# define N_SENSORS 1
 #define temperature_sensor_1 A0 
 #define set_point_input A1
 #define fan_speed_input A2
-#define fan_speed_output 7
+#define fan_speed_pin 7
 
+static const int N_SENSORS = 2; // No: of additional temp sensors
+
+static const int sensor_pin[N_SENSORS] = {A3, A4};
 /***************************************************************************************************/
 /***************************************** Communications ******************************************/
 /***************************************************************************************************/
 static const int CMD_LENGTH = 3;
-static const int MSG_LENGTH = 4;
+static const int MSG_LENGTH = 4 + 2*N_SENSORS;
 byte buffer_rx[500];
 byte buffer_tx[MSG_LENGTH];
 volatile int buffer_rx_ptr;
@@ -32,7 +34,9 @@ const int update_time = 100; // Update time in ms
 const int send_data_time = 1000; // Rate at which data is sent to computer
 int set_voltage_digital = 0; // or in the digital sense: 0-4095
 int set_voltage_input_digital = 1861, set_voltage_input_digital_prev = 0 ;
-int sensor_voltage, set_voltage_actual;
+int sensor_voltage_controller, set_voltage_actual;
+
+int sensor_reading[N_SENSORS] = {0}; 
 
 int fan_speed = 0; // Analog input for fab speed
 
@@ -45,6 +49,8 @@ void setup()
   
   analogWriteResolution(12);
   analogReadResolution(12);
+
+  pinMode(fan_speed_pin, OUTPUT);
 
 }
 
@@ -67,15 +73,16 @@ void loop()
         {
           // New set-point temp received.
            set_voltage_input_digital = long(buffer_rx[1])*256 + long(buffer_rx[2]);
-
+          
+        }
+        else if(buffer_rx[0]==1)
+        {
+          // New set-point temp received.
+           fan_speed = long(buffer_rx[1])*256 + long(buffer_rx[2]);
+          
         }
     }
   }
-
-  #ifdef TESTING
-    // For testing use a potentiometer.
-    set_voltage_input_digital = analogRead(set_point_input); // Set point voltage red by the ADC
-  # endif
   
   // If the set-point is changed then write the new value to the DAC
   if(set_voltage_input_digital != set_voltage_input_digital_prev)
@@ -93,19 +100,27 @@ void loop()
     // Read the sensor
     #ifdef TESTING
     // Testing
-      sensor_voltage = 310;
+      sensor_voltage_controller = 310;
       set_voltage_actual = int(adc_resolution*(0.516 + set_voltage_input_digital*(2.72-0.516)/float(dac_resolution))/3.3); 
+      for (int i=0;i<N_SENSORS;i++)
+      {
+        sensor_reading[i] = 2048;
+      }
     #else 
-        sensor_voltage = analogRead(temperature_sensor_1);
+        sensor_voltage_controller = analogRead(temperature_sensor_1);
         set_voltage_actual = analogRead(set_point_input);
+
+        // Read the additional temp sensors
+        for (int i=0;i<N_SENSORS;i++)
+        {
+            sensor_reading[i] = analogRead(sensor_pin[i]);
+        }
+        // Read the fan-speed setting
+        fan_speed = analogRead(fan_speed_input);
     #endif
-
-    // Read the fan-speed setting
-    
-    fan_speed = analogRead(fan_speed_input);
-
+     
     // Send PWM signal to the motor-driver
-    analogWrite(fan_speed_output);
+    analogWrite(fan_speed_pin, fan_speed);
   }
 
 //
@@ -115,22 +130,28 @@ void loop()
   {
       last_send_time = millis();
       // send the measured temperature value
-      buffer_tx[0] = byte(sensor_voltage>>8);
-      buffer_tx[1] = byte(sensor_voltage%256);
+      buffer_tx[0] = byte(sensor_voltage_controller>>8);
+      buffer_tx[1] = byte(sensor_voltage_controller%256);
 
       // send the set-temperature value (actual)
       buffer_tx[2] = byte(set_voltage_actual>>8);
       buffer_tx[3] = byte(set_voltage_actual%256);
 
+      for (int i=0;i<N_SENSORS;i++)
+      {
+        buffer_tx[4+2*i] = byte(sensor_reading[i]>>8);
+        buffer_tx[4+2*i+1] = byte(sensor_reading[i]%256);        
+      }
+
       SerialUSB.write(buffer_tx, MSG_LENGTH);
     
   }
 
-   # ifdef TESTING
-      SerialUSB.println(set_voltage_digital);
-      SerialUSB.println('Sensor voltage');
-      SerialUSB.println(sensor_voltage);
-    #endif
+//   # ifdef TESTING
+//      SerialUSB.println(set_voltage_digital);
+//      SerialUSB.println('Sensor voltage');
+//      SerialUSB.println(sensor_voltage_controller);
+//    #endif
 
     
 

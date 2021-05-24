@@ -13,6 +13,10 @@ class MicrocontrollerDef:
 	VDD = 3.3 # uController voltage
 	DAC_MIN = 0.516 # Min of DAC voltage (Arduino Due) 
 	DAC_MAX = 2.72  # Max of DAC voltage (Arduino Due)
+
+	N_SENSORS = 2 # No:of temp sensors in addition to the one connected to the PTC temp controller.
+	FIXED_RESISTANCE = 10000 # Fixed resistance in the voltage divider. 
+	MSG_LENGTH += N_SENSORS*2
 	def __init__(self):
 		pass
 
@@ -34,6 +38,7 @@ class TempControllerDef:
 	TEMP_MAX = 40
 	TEMP_STEP_MIN = 0.1
 	TEMP_DEFAULT = 20.0
+
 
 	def __init__(self):
 		pass
@@ -64,6 +69,15 @@ def digital_to_analog(digital):
 	analog = float((digital/(2**MicrocontrollerDef.ADC_RES))*MicrocontrollerDef.VDD) # Int betwee 0 and 2^DAC_RES
 
 	return analog
+
+def sensor_reading_to_temp(value):
+	# Sensor reading is digital value between 0 and 2^ADC_RES
+	measured_resistance = MicrocontrollerDef.FIXED_RESISTANCE/(2**MicrocontrollerDef.ADC_RES/float(value) - 1)
+
+	measured_temp = TempControllerDef.THERMISTOR_LUT_RES_TO_TEMP(measured_resistance)
+
+	return measured_temp
+
 
 PLOT_VARIABLES = ['Temperature (measured)', 'Temperature (set)']
 
