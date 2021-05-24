@@ -11,6 +11,8 @@
 # define N_SENSORS 1
 #define temperature_sensor_1 A0 
 #define set_point_input A1
+#define fan_speed_input A2
+#define fan_speed_output 7
 
 /***************************************************************************************************/
 /***************************************** Communications ******************************************/
@@ -26,11 +28,13 @@ volatile bool isReceived = false;
 const int dac_resolution = 4095; // 12-bit DAC resolution
 const int adc_resolution = 4095; // 10-bit ADC resolution (Arduino)
 
-const int update_time = 1000; // Update time in ms
+const int update_time = 100; // Update time in ms
 const int send_data_time = 1000; // Rate at which data is sent to computer
 int set_voltage_digital = 0; // or in the digital sense: 0-4095
 int set_voltage_input_digital = 1861, set_voltage_input_digital_prev = 0 ;
 int sensor_voltage, set_voltage_actual;
+
+int fan_speed = 0; // Analog input for fab speed
 
 unsigned long last_sensor_read=0, last_send_time=0;
 
@@ -95,7 +99,13 @@ void loop()
         sensor_voltage = analogRead(temperature_sensor_1);
         set_voltage_actual = analogRead(set_point_input);
     #endif
+
+    // Read the fan-speed setting
     
+    fan_speed = analogRead(fan_speed_input);
+
+    // Send PWM signal to the motor-driver
+    analogWrite(fan_speed_output);
   }
 
 //
