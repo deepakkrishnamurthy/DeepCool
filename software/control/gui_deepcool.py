@@ -60,6 +60,7 @@ class MicrocontrollerReceiver(QObject):
 
 		self.SAVE_DATA = ['Time', 'Temperature set (C)', 'Temperature measured (C)'] + ['Sensor {} (C)'.format(ii+1) for ii in range(MicrocontrollerDef.N_SENSORS)]
 		self.csv_register = None
+		self.data_file = 'data'
 
 		
 
@@ -124,7 +125,7 @@ class MicrocontrollerReceiver(QObject):
 			self.csv_register = CSV_Tool.CSV_Register(header = [self.SAVE_DATA])
 
 			path, *rest = os.path.split(os.getcwd())
-			self.path = os.path.join(path, 'testing_data', 'data' + datetime.now().strftime('%Y-%m-%d %H-%M-%-S')+'.csv')
+			self.path = os.path.join(path, 'testing_data', self.data_file + datetime.now().strftime('%Y-%m-%d %H-%M-%-S')+'.csv')
 
 			self.csv_register.file_directory= self.path
 			self.csv_register.start_write()
@@ -133,6 +134,8 @@ class MicrocontrollerReceiver(QObject):
 			self.csv_register.close()
 			self.csv_register = None
 
+	def set_save_file_name(self, name):
+		self.data_file = name
 
 	def stop(self):
 
@@ -150,6 +153,7 @@ class TemperatureControlWidget(QWidget):
 	temp_setpoint = Signal(float)
 	fan_speed = Signal(int)
 	save_data_signal = Signal(bool)
+	save_file_name = Signal(str)
 
 	def __init__(self, main=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -188,6 +192,10 @@ class TemperatureControlWidget(QWidget):
 		self.slider_speed.setValue(50)
 		self.slider_speed.setSingleStep(1)
 
+		# Data file name
+		self.lineEdit_savingFile = QLineEdit()
+		self.lineEdit_savingFile.setText('file name')
+
 		# Layout
 		layout = QGridLayout()
 		layout.addWidget(QLabel('Temperature set-point (C)'), 0,0,1,1)
@@ -203,6 +211,7 @@ class TemperatureControlWidget(QWidget):
 		layout.addWidget(self.slider_speed,1,2,2+MicrocontrollerDef.N_SENSORS-1,1)
 
 		layout.addWidget(self.save_data_button,0,3)
+		layout.addWidget(self.lineEdit_savingFile,1,3)
 
 		self.setLayout(layout)
 
@@ -256,7 +265,9 @@ class TemperatureControlWidget(QWidget):
 	def handle_save_button(self):
 
 		if(self.save_data_button.isChecked()):
+			self.save_file_name.emit(self.lineEdit_savingFile.text())
 			self.save_data_signal.emit(True)
+
 		else:
 			self.save_data_signal.emit(False)
 
@@ -290,6 +301,7 @@ class DeepCool_GUI(QMainWindow):
 		self.temp_setting_widget.temp_setpoint.connect(self.microcontroller.send_temp_setpoint)
 		self.temp_setting_widget.save_data_signal.connect(self.microcontroller_Receiver.toggle_save_data)
 		self.temp_setting_widget.fan_speed.connect(self.microcontroller.send_fan_speed)
+		self.temp_setting_widget.save_file_name.connect(self.microcontroller_Receiver.set_save_file_name)
 		# Update the temperature display based on measured value
 		self.microcontroller_Receiver.update_temperature.connect(self.temp_setting_widget.update_actual_temp_display)
 		self.microcontroller_Receiver.sensor_readings_signal.connect(self.temp_setting_widget.update_sensor_temp_display)

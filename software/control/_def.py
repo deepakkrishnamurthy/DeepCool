@@ -14,7 +14,7 @@ class MicrocontrollerDef:
 	DAC_MIN = 0.516 # Min of DAC voltage (Arduino Due) 
 	DAC_MAX = 2.72  # Max of DAC voltage (Arduino Due)
 
-	N_SENSORS = 2 # No:of temp sensors in addition to the one connected to the PTC temp controller.
+	N_SENSORS = 0 # No:of temp sensors in addition to the one connected to the PTC temp controller.
 	FIXED_RESISTANCE = 10000 # Fixed resistance in the voltage divider. 
 	MSG_LENGTH += N_SENSORS*2
 	def __init__(self):

@@ -6,16 +6,23 @@
 
 #include <Wire.h>
 
-# define TESTING
-
+//#define TESTING
 #define temperature_sensor_1 A0 
 #define set_point_input A1
 #define fan_speed_input A2
 #define fan_speed_pin 7
 
-static const int N_SENSORS = 2; // No: of additional temp sensors
+//# define SENSORS
+static const int N_SENSORS = 0; // No: of additional temp sensors
 
-static const int sensor_pin[N_SENSORS] = {A3, A4};
+#ifdef SENSORS
+  static const int sensor_pin[N_SENSORS] = {A3, A4};
+  int sensor_reading[N_SENSORS] = {0}; 
+#else
+  static const int sensor_pin[1] = {A3};
+  int sensor_reading[1] = {0};
+#endif
+ 
 /***************************************************************************************************/
 /***************************************** Communications ******************************************/
 /***************************************************************************************************/
@@ -36,7 +43,7 @@ int set_voltage_digital = 0; // or in the digital sense: 0-4095
 int set_voltage_input_digital = 1861, set_voltage_input_digital_prev = 0 ;
 int sensor_voltage_controller, set_voltage_actual;
 
-int sensor_reading[N_SENSORS] = {0}; 
+
 
 int fan_speed = 0; // Analog input for fab speed
 
