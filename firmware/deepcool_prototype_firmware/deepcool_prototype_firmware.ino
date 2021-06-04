@@ -11,6 +11,8 @@
 #define set_point_input A1
 #define fan_speed_input A2
 #define fan_speed_pin 7
+#define motor_pin_1 8
+#define motor_pin_2 9
 
 //# define SENSORS
 static const int N_SENSORS = 0; // No: of additional temp sensors
@@ -58,6 +60,13 @@ void setup()
   analogReadResolution(12);
 
   pinMode(fan_speed_pin, OUTPUT);
+  pinMode(motor_pin_1, OUTPUT);
+  pinMode(motor_pin_2, OUTPUT);
+
+  digitalWrite(motor_pin_1, HIGH);
+  digitalWrite(motor_pin_2, LOW);
+
+  
 
 }
 
@@ -86,6 +95,9 @@ void loop()
         {
           // New set-point temp received.
            fan_speed = long(buffer_rx[1])*256 + long(buffer_rx[2]);
+
+           // Send PWM signal to the motor-driver
+          analogWrite(fan_speed_pin, fan_speed);
           
         }
     }
@@ -123,11 +135,10 @@ void loop()
             sensor_reading[i] = analogRead(sensor_pin[i]);
         }
         // Read the fan-speed setting
-        fan_speed = analogRead(fan_speed_input);
+//        fan_speed = analogRead(fan_speed_input);
     #endif
      
-    // Send PWM signal to the motor-driver
-    analogWrite(fan_speed_pin, fan_speed);
+    
   }
 
 //

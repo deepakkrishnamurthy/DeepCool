@@ -249,7 +249,7 @@ class TemperatureControlWidget(QWidget):
 	def send_fan_speed(self):
 		value = self.slider_speed.value()
 
-		digital_value = int((value/100)*(2**MicrocontrollerDef.DAC_RES))
+		digital_value = int((value/100)*(2**MicrocontrollerDef.DAC_RES-1))
 
 		self.fan_speed.emit(digital_value)
 
