@@ -14,11 +14,11 @@
 #define motor_pin_1 8
 #define motor_pin_2 9
 
-//# define SENSORS
-static const int N_SENSORS = 0; // No: of additional temp sensors
+# define SENSORS
+static const int N_SENSORS = 4; // No: of additional temp sensors
 
 #ifdef SENSORS
-  static const int sensor_pin[N_SENSORS] = {A3, A4};
+  static const int sensor_pin[N_SENSORS] = {A3, A4, A5, A6};
   int sensor_reading[N_SENSORS] = {0}; 
 #else
   static const int sensor_pin[1] = {A3};
