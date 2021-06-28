@@ -13,6 +13,12 @@
 #define fan_speed_pin 7
 #define motor_pin_1 8
 #define motor_pin_2 9
+// For Teensy LC
+#define DAC_pin 26
+
+// Arduino Due
+//#define DAC_pin DAC_1
+
 
 # define SENSORS
 static const int N_SENSORS = 4; // No: of additional temp sensors
@@ -106,7 +112,7 @@ void loop()
   // If the set-point is changed then write the new value to the DAC
   if(set_voltage_input_digital != set_voltage_input_digital_prev)
   {    
-    analogWrite(DAC1, set_voltage_input_digital);
+    analogWrite(DAC_pin, set_voltage_input_digital);
     set_voltage_input_digital_prev = set_voltage_input_digital;  
 
    
