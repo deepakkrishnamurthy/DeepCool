@@ -6,7 +6,7 @@
 
 #include <Wire.h>
 
-#define TESTING
+//#define TESTING
 #define temperature_sensor_1 A0 
 #define set_point_input A1
 #define fan_speed_input A2
@@ -20,7 +20,7 @@
 //#define DAC_pin DAC_1
 
 
-# define SENSORS
+//# define SENSORS
 static const int N_SENSORS = 4; // No: of additional temp sensors
 
 #ifdef SENSORS
@@ -60,7 +60,9 @@ unsigned long last_sensor_read=0, last_send_time=0;
 void setup() 
 {
   SerialUSB.begin (20000000);
-  while(!SerialUSB); //Wait until connection is established
+  #ifndef TESTING
+    while(!SerialUSB); //Wait until connection is established
+  #endif
   
   analogWriteResolution(12);
   analogReadResolution(12);
@@ -72,7 +74,7 @@ void setup()
   digitalWrite(motor_pin_1, HIGH);
   digitalWrite(motor_pin_2, LOW);
 
-  
+  pinMode(13, OUTPUT);
 
 }
 
@@ -168,7 +170,10 @@ void loop()
       }
 
       SerialUSB.write(buffer_tx, MSG_LENGTH);
-    
+      
+      digitalWrite(13, HIGH);
+      delay(20);
+      digitalWrite(13, LOW);
   }
 
 //   # ifdef TESTING
