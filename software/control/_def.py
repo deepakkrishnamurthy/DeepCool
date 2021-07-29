@@ -4,6 +4,10 @@ from scipy import interpolate
 
 class MicrocontrollerDef:
 	 # Time interval for reading micro Controller (ms)
+	NAME = 'Teensy-LC'
+	DESC = 'USB'
+	# NAME = 'Arduino Due'
+	# DESC = 'Arduino'
 	UCONTROLLER_READ_INTERVAL = 100 
 	MSG_LENGTH = 4
 	CMD_LENGTH = 3
@@ -11,10 +15,12 @@ class MicrocontrollerDef:
 	DAC_RES = 12 # Arduino Due DAC resolution (set to 12 bits)
 	ADC_RES = 12 # Arduino Due ADC resolution (set to 12 bits)
 	VDD = 3.3 # uController voltage
-	DAC_MIN = 0.516 # Min of DAC voltage (Arduino Due) 
-	DAC_MAX = 2.72  # Max of DAC voltage (Arduino Due)
+	# DAC_MIN = 0.516 # Min of DAC voltage (Arduino Due) 
+	# DAC_MAX = 2.72  # Max of DAC voltage (Arduino Due)
+	DAC_MIN = 0.0 # Min of DAC voltage (Teensy-LC) 
+	DAC_MAX = 3.3  # Max of DAC voltage (Teensy-LC)
 
-	N_SENSORS = 4 # No:of temp sensors in addition to the one connected to the PTC temp controller.
+	N_SENSORS = 0 # No:of temp sensors in addition to the one connected to the PTC temp controller.
 	FIXED_RESISTANCE = 10000 # Fixed resistance in the voltage divider. 
 	MSG_LENGTH += N_SENSORS*2
 	def __init__(self):

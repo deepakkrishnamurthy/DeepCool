@@ -10,7 +10,7 @@
 #define temperature_sensor_1 A0 
 #define set_point_input A1
 #define fan_speed_input A2
-#define fan_speed_pin 7
+#define fan_speed_pin 6
 #define motor_pin_1 8
 #define motor_pin_2 9
 // For Teensy LC
@@ -21,7 +21,7 @@
 
 
 //# define SENSORS
-static const int N_SENSORS = 4; // No: of additional temp sensors
+static const int N_SENSORS = 0; // No: of additional temp sensors
 
 #ifdef SENSORS
   static const int sensor_pin[N_SENSORS] = {A3, A4, A5, A6};
@@ -53,7 +53,7 @@ int sensor_voltage_controller, set_voltage_actual;
 
 
 
-int fan_speed = 0; // Analog input for fab speed
+int fan_speed = int(dac_resolution/2); // Analog input for fab speed
 
 unsigned long last_sensor_read=0, last_send_time=0;
 
@@ -75,6 +75,9 @@ void setup()
   digitalWrite(motor_pin_2, LOW);
 
   pinMode(13, OUTPUT);
+
+  // Start the fan (at 50% power) once connection is established
+  analogWrite(fan_speed_pin, fan_speed);
 
 }
 
