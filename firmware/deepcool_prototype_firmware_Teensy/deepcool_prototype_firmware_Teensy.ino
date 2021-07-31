@@ -60,9 +60,21 @@ unsigned long last_sensor_read=0, last_send_time=0;
 void setup() 
 {
   SerialUSB.begin (20000000);
-  #ifndef TESTING
-    while(!SerialUSB); //Wait until connection is established
-  #endif
+  
+  while(!SerialUSB); //Wait until connection is established
+
+  // Handshaking protocol
+  int send_number = 1;
+  SerialUSB.write(send_number);
+  int rec_number=0;
+  
+  while (rec_number!=2)        // Wait for command '2' to be sent from the host computer.
+  {
+    rec_number = int(SerialUSB.read());
+  }
+  SerialUSB.write(rec_number);
+  
+
   
   analogWriteResolution(12);
   analogReadResolution(12);
