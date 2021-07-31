@@ -38,19 +38,18 @@ class Microcontroller():
     def hand_shaking_protocol(self):
         # Read string from Arduino
         print('try handshaking')
-        initial_number = ord(self.serial.read())
-        print(initial_number)
-        print('first number received')
-        if(initial_number == 1):
-            print('\n ------------Communication established with the uController------------\n')
-            cmd=bytearray(1)
-            cmd[0]=2
-            self.serial.write(cmd)
 
-        second_number = ord(self.serial.read())
-            
-        if(second_number == 2):
+        print('Pinging uController')
+
+        cmd = bytearray(1)
+        cmd[0] = 1
+        self.serial.write(cmd)
+
+        rec_number = ord(self.serial.read())
+
+        if(rec_number == 2):
             print('\n ------------Communication established both ways with the uController------------\n')
+
         print('handshaking finished')
 
     def close(self):

@@ -61,18 +61,21 @@ void setup()
 {
   SerialUSB.begin (20000000);
   
-  while(!SerialUSB); //Wait until connection is established
+//  while(!SerialUSB); //Wait until connection is established
 
   // Handshaking protocol
-  int send_number = 1;
-  SerialUSB.write(send_number);
-  int rec_number=0;
+
   
-  while (rec_number!=2)        // Wait for command '2' to be sent from the host computer.
+  // Listen for handshaking command from computer
+  int rec_number = 0;
+
+  while (rec_number!=1)        // Wait for command '2' to be sent from the host computer.
   {
     rec_number = int(SerialUSB.read());
   }
-  SerialUSB.write(rec_number);
+  
+  SerialUSB.write(rec_number+1);
+  
   
 
   
