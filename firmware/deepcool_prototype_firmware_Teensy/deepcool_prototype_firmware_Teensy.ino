@@ -9,23 +9,20 @@
 //#define TESTING
 #define temperature_sensor_1 A0 
 #define set_point_input A1
-#define fan_speed_input A2
+#define fan_speed_input A5
 #define fan_speed_pin 6
 #define motor_pin_1 8
 #define motor_pin_2 9
 // For Teensy LC
 #define DAC_pin 26
 
-// Arduino Due
-//#define DAC_pin DAC_1
 
-
-//# define SENSORS
-static const int N_SENSORS = 0; // No: of additional temp sensors
+# define SENSORS
+static const int N_SENSORS = 2; // No: of additional temp sensors
 
 #ifdef SENSORS
-  static const int sensor_pin[N_SENSORS] = {A3, A4, A5, A6};
-  int sensor_reading[N_SENSORS] = {0}; 
+  static const int sensor_pin[N_SENSORS] = {A2, A3};
+  int sensor_reading[N_SENSORS] = {100}; 
 #else
   static const int sensor_pin[1] = {A3};
   int sensor_reading[1] = {0};

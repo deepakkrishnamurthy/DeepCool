@@ -204,7 +204,7 @@ class TemperatureControlWidget(QWidget):
 		layout.addWidget(self.actual_temp_display, 1,1,1,1)
 
 		for ii in range(MicrocontrollerDef.N_SENSORS):
-			layout.addWidget(QLabel('Sensor {} (C)'.format(ii+1)), 2+ii,0)
+			layout.addWidget(QLabel('{} Temp. (C)'.format(MicrocontrollerDef.SENSOR_NAMES[ii])), 2+ii,0)
 			layout.addWidget(self.temp_display[ii], 2+ii, 1)
 
 		layout.addWidget(QLabel('Fan speed (%)'),0,2,1,1)
