@@ -3,7 +3,7 @@
 ## About
 Open-source project to develop an ambient temperature controller for microscope enclosures. In particular, the goal is to address the dearth of off-the-shelf solutions for less-than-room-temperature cooling of microscope enclosures.  
 
-This solution was inspired by and is used as part of the [Gravity Machine microscope](git@github.com:deepakkrishnamurthy/gravitymachine-research.git) for ensuring tempertaure stability and avoiding thermal gradients, as well as achieving temperature profiles found in ocean environments.
+This solution was inspired by and is used as part of the [Gravity Machine microscope](https://github.com/deepakkrishnamurthy/gravitymachine-research.git) for ensuring tempertaure stability and avoiding thermal gradients, as well as achieving temperature profiles found in ocean environments.
 
 ## Overview of design
 
